@@ -19,6 +19,21 @@ import (
 
 var lastPubDate = time.Now()
 
+func getChannels() []string {
+	c := strings.Split(os.Getenv("CHANNEL_ID"), ",")
+	n := 0
+	for _, channel := range c {
+		v := strings.TrimSpace(channel)
+		if v != "" {
+			c[n] = v
+			n++
+		}
+	}
+
+	c = c[:n]
+	return c
+}
+
 func check() []rss.Item {
 	resp, err := http.Get("https://vnexpress.net/rss/goc-nhin.rss")
 	if err != nil {
@@ -48,7 +63,7 @@ func check() []rss.Item {
 	return publish
 }
 
-func update(session *discordgo.Session, channel string) {
+func update(session *discordgo.Session, channels []string) {
 	for {
 		items := check()
 		if len(items) == 0 {
@@ -84,8 +99,12 @@ func update(session *discordgo.Session, channel string) {
 				}
 			}
 
-			if _, err := session.ChannelMessageSendComplex(channel, &send); err != nil {
-				log.Println(err)
+			for _, channel := range channels {
+				if _, err := session.ChannelMessageSendComplex(channel, &send); err != nil {
+					log.Printf("Error dispatching to channel %s : %s", channel, err)
+				} else {
+					log.Printf("Dispatched article '%s' to channel %s", item.Title, channel)
+				}
 			}
 
 			if send.File != nil {
@@ -112,7 +131,10 @@ func main() {
 		return
 	}
 
-	go update(discord, os.Getenv("CHANNEL_ID"))
+	channels := getChannels()
+	log.Printf("Sending to channel %q", channels)
+
+	go update(discord, channels)
 	fmt.Println("Bot is now running.  Press CTRL-C to exit.")
 
 	sc := make(chan os.Signal, 1)
