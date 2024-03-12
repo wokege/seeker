@@ -17,7 +17,16 @@ import (
 	"time"
 )
 
-var lastPubDate = time.Now()
+type Item struct {
+	entry    rss.Item
+	category string
+}
+
+var lastPub = make(map[string]time.Time)
+var feeds = []string{
+	"https://vnexpress.net/rss/goc-nhin.rss",
+	"https://vnexpress.net/rss/tam-su.rss",
+}
 
 func getChannels() []string {
 	c := strings.Split(os.Getenv("CHANNEL_ID"), ",")
@@ -34,33 +43,46 @@ func getChannels() []string {
 	return c
 }
 
-func check() []rss.Item {
-	resp, err := http.Get("https://vnexpress.net/rss/goc-nhin.rss")
-	if err != nil {
-		log.Println(err)
-		return nil
-	}
-	defer resp.Body.Close()
+func check() []Item {
+	var ret []Item
 
-	fp := rss.Parser{}
-	feed, err := fp.Parse(resp.Body)
-	_ = feed.Items
+	for _, url := range feeds {
+		resp, err := http.Get(url)
+		if err != nil {
+			log.Println(err)
+			return nil
+		}
+		defer resp.Body.Close()
 
-	var publish []rss.Item
-	d := lastPubDate
+		fp := rss.Parser{}
+		feed, err := fp.Parse(resp.Body)
+		_ = feed.Items
 
-	for _, v := range feed.Items {
-		if v.PubDateParsed.After(d) {
-			publish = append(publish, *v)
-			if v.PubDateParsed.After(lastPubDate) {
-				lastPubDate = *v.PubDateParsed
+		var publish []rss.Item
+		d, ok := lastPub[url]
+		if !ok {
+			d = time.UnixMilli(1710139658000)
+		}
+
+		for _, v := range feed.Items {
+			if v.PubDateParsed.After(d) {
+				publish = append(publish, *v)
+				if v.PubDateParsed.After(d) {
+					d = *v.PubDateParsed
+				}
 			}
+		}
+
+		lastPub[url] = d
+
+		slices.Reverse(publish)
+
+		for _, item := range publish {
+			ret = append(ret, Item{item, feed.Title})
 		}
 	}
 
-	slices.Reverse(publish)
-
-	return publish
+	return ret
 }
 
 func update(session *discordgo.Session, channels []string) {
@@ -71,15 +93,19 @@ func update(session *discordgo.Session, channels []string) {
 			continue
 		}
 
-		for _, item := range items {
+		for _, w := range items {
+			item := w.entry
 			send := discordgo.MessageSend{}
 			embed := discordgo.MessageEmbed{}
+			footer := discordgo.MessageEmbedFooter{}
 			send.Embed = &embed
+			embed.Footer = &footer
 
 			embed.Title = item.Title
 
 			embed.Description = strings.Split(item.Description, "</br>")[1]
 			embed.URL = item.Link
+			footer.Text = w.category
 
 			// imageLink URL
 			re := regexp.MustCompile(`img src="(.*)"`)
