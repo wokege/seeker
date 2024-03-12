@@ -61,7 +61,7 @@ func check() []Item {
 		var publish []rss.Item
 		d, ok := lastPub[url]
 		if !ok {
-			d = time.UnixMilli(1710139658000)
+			d = time.Now()
 		}
 
 		for _, v := range feed.Items {
