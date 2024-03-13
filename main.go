@@ -98,7 +98,9 @@ func update(session *discordgo.Session, channels []string) {
 			send := discordgo.MessageSend{}
 			embed := discordgo.MessageEmbed{}
 			footer := discordgo.MessageEmbedFooter{}
-			send.Embed = &embed
+			send.Embeds = []*discordgo.MessageEmbed{
+				&embed,
+			}
 			embed.Footer = &footer
 
 			embed.Title = item.Title
