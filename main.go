@@ -103,7 +103,14 @@ func update(session *discordgo.Session, channels []string) {
 
 			embed.Title = item.Title
 
-			embed.Description = strings.Split(item.Description, "</br>")[1]
+			splitDesc := strings.Split(item.Description, "</br>")
+
+			if len(splitDesc) >= 2 {
+				embed.Description = splitDesc[1]
+			} else {
+				embed.Description = splitDesc[0]
+			}
+
 			embed.URL = item.Link
 			footer.Text = w.category
 
