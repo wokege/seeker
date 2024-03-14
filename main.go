@@ -27,6 +27,7 @@ var lastPub = make(map[string]time.Time)
 var feeds = []string{
 	"https://vnexpress.net/rss/goc-nhin.rss",
 	"https://vnexpress.net/rss/tam-su.rss",
+	"https://vnexpress.net/rss/y-kien.rss",
 }
 
 func getChannels() []string {
