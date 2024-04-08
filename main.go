@@ -91,7 +91,7 @@ func update(session *discordgo.Session, channels []string) {
 	for {
 		items := check()
 		if len(items) == 0 {
-			time.Sleep(5 * time.Second)
+			time.Sleep(4 * time.Hour)
 			continue
 		}
 
