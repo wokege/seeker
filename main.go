@@ -1,17 +1,14 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
 	"github.com/bwmarrin/discordgo"
 	"github.com/joho/godotenv"
 	"github.com/mmcdole/gofeed/rss"
-	"io"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
-	"regexp"
 	"slices"
 	"strings"
 	"syscall"
@@ -118,33 +115,7 @@ func update(session *discordgo.Session, channels []string) {
 			embed.URL = item.Link
 			footer.Text = w.category
 
-			var buffer []byte
-
-			// imageLink URL
-			re := regexp.MustCompile(`img src="(.*)"`)
-			imageLink := re.FindStringSubmatch(item.Description)
-			if imageLink != nil {
-				imgRes, err := http.Get(imageLink[1])
-				if err != nil {
-					log.Println(err)
-				} else {
-					buffer, _ = io.ReadAll(imgRes.Body)
-					imgRes.Body.Close()
-				}
-			}
-
 			for _, channel := range channels {
-				if buffer != nil {
-					f := discordgo.File{}
-					reader := bytes.NewReader(buffer)
-					f.Reader = reader
-					f.Name = "thumb.jpg"
-					send.File = &f
-
-					i := discordgo.MessageEmbedImage{URL: "attachment://thumb.jpg"}
-					embed.Image = &i
-				}
-
 				if _, err := session.ChannelMessageSendComplex(channel, &send); err != nil {
 					log.Printf("Error dispatching to channel %s : %s", channel, err)
 				} else {
