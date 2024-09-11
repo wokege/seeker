@@ -27,6 +27,8 @@ var feeds = []string{
 	"https://vnexpress.net/rss/y-kien.rss",
 }
 
+var duration = 11 * time.Hour
+
 func getChannels() []string {
 	c := strings.Split(os.Getenv("CHANNEL_ID"), ",")
 	n := 0
@@ -88,7 +90,7 @@ func update(session *discordgo.Session, channels []string) {
 	for {
 		items := check()
 		if len(items) == 0 {
-			time.Sleep(4 * time.Hour)
+			time.Sleep(duration)
 			continue
 		}
 
